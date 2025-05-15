@@ -45,13 +45,6 @@
         {
           "locationAlwaysAndWhenInUsePermission": "The app needs access to your location in order to tag photo locations."
         }
-      ],
-      [
-        "expo-maps",
-        {
-          "requestLocationPermission": true,
-          "locationPermission": "The app needs access to your location in order to tag photo locations."
-        }
       ]
     ],
     "extra": {

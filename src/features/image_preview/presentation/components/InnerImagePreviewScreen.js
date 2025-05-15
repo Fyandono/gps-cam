@@ -48,7 +48,7 @@ const InnerImagePreviewScreen = ({ route }) => {
                 <ActivityIndicator size="large" color="gray" />
                 <Text>Capturing map preview…</Text>
 
-                {/* Invisible map rendering for screenshot */}
+                {/* Invisible map rendering for snapshot */}
                 <View style={imagePreviewStyles.hiddenMapContainer} ref={miniMapRef} collapsable={false}>
                     <MapView
                         style={{ flex: 1 }}
@@ -68,9 +68,12 @@ const InnerImagePreviewScreen = ({ route }) => {
 
     else if (status === PreviewImageStatus.LOADED) {
         return (
-            <View style={imagePreviewStyles.container}>
-                <Image src={image} style={imagePreviewStyles.image} />
-            </View>
+            <View >
+                <View style={imagePreviewStyles.container}>
+                    <Image src={image} style={imagePreviewStyles.image} />
+                </View>
+                <Button style={imagePreviewStyles.container} />
+            </View >
         );
     }
 
