@@ -45,7 +45,8 @@
         {
           "locationAlwaysAndWhenInUsePermission": "The app needs access to your location in order to tag photo locations."
         }
-      ]
+      ],
+      "react-native-image-marker"
     ],
     "extra": {
       "eas": {

@@ -19,7 +19,7 @@
     "expo-system-ui": "~5.0.7",
     "react": "19.0.0",
     "react-native": "0.79.2",
-    "react-native-image-marker": "github:WillyRamirez/react-native-image-marker",
+    "react-native-image-marker": "^1.2.6",
     "react-native-maps": "1.20.1",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.10.0",
