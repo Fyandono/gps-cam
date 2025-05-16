@@ -23,6 +23,14 @@ const imagePreviewStyles = StyleSheet.create({
         width: 160,
         height: 160,
     },
+    capturingMap: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    button: {
+        margin: 16,
+    },
 });
 
 export default imagePreviewStyles;

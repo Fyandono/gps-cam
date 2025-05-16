@@ -6,103 +6,89 @@ import {
     previewImageCapturingMap,
 } from './previewImageSlice';
 
-import LocationUtil from '../../../../../utils/location/LocationUtil';
-import Marker, { ImageFormat, Position } from 'react-native-image-marker';
+import { getCoordinates } from '../../../../../utils/location/LocationUtil';
 import icon from '../../../../../../assets/icon_water_mark.png';
+import { captureRef } from 'react-native-view-shot';
+import * as MediaLibrary from 'expo-media-library';
+import * as FileSystem from 'expo-file-system';
 
-export const setInitialLoad = (imageUri, onSaveMiniMap) => {
+export const setInitialLoad = (imageUri, miniMapRef) => {
     return async (dispatch) => {
-        dispatch(previewImageInitial())
-        dispatch(previewImageLoading())
-
-        // GET LOCATION
-        const location = await LocationUtil.getCoordinates();
-        const coordData = {
-            latitude: location.latitude,
-            longitude: location.longitude,
-        };
-        dispatch(previewImageCapturingMap({ coords: coordData }));
-
-        // TIMEOUT FOR GETTING MAPS RENDERED
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        let miniMapImage = await onSaveMiniMap();
-        dispatch(previewImageLoading());
-
-        // RENDER MARKER
         try {
-            const watermarkImages = [];
-            if (miniMapImage) {
-                watermarkImages.push({
-                    src: miniMapImage,
-                    position: {
-                        position: Position.bottomRight
-                    },
-                });
+            dispatch(previewImageInitial());
+            dispatch(previewImageLoading());
+
+            // GET LOCATION
+            const location = await getCoordinates();
+            const coordData = {
+                latitude: location.latitude,
+                longitude: location.longitude,
+            };
+
+            dispatch(previewImageCapturingMap({ coords: coordData }));
+
+            // GETTING MAPS RENDERED
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            const getMapImageUri = async () => {
+                try {
+                    const mapImageUri = await captureRef(miniMapRef, {
+                        format: 'png',
+                        quality: 1,
+                        result: 'tmpfile',
+                    });
+                    return mapImageUri;
+                } catch (error) {
+                    return null;
+                }
             }
+            let miniMapImageUri = await getMapImageUri();
+            dispatch(previewImageLoading());
 
-            watermarkImages.push({
-                src: icon,
-                position: {
-                    position: Position.topRight
-                },
-                scale: 0.4,
-                alpha: 0.8,
-            });
-
-            // IMAGE MARKER OPTIONS
-            let optionsMaps = {
-                backgroundImage: {
-                    src: imageUri,
-                    scale: 1,
-                },
-                watermarkImages: watermarkImages,
-                scale: 1,
-                quality: 100,
-                filename: 'preview_marked_image',
-                saveFormat: ImageFormat.png,
-            };
-            let markedWithMaps = await Marker.markImage(optionsMaps);
-
-            // TEXT MARKER OPTIONS
-            let optionsText = {
-                backgroundImage: {
-                    src: markedWithMaps,
-                    scale: 1,
-                },
-                watermarkTexts: [{
-                    text:
-                        ` Datetime: ${new Date().toUTCString()}
- Latitude: ${location.latitude}
- Longitude: ${location.longitude}
- Altitude: ${location.altitude.toFixed()} meter
- GPS Mocked: ${location.isMocked ? 'Yes' : 'No'}`,
-                    position: {
-                        position: Position.bottomLeft,
-                    },
-                    style: {
-                        color: '#FFF',
-                        fontSize: 72,
-                        fontName: 'Arial',
-                        shadowStyle: {
-                            dx: 1,
-                            dy: 1,
-                            radius: 10,
-                            color: '#000',
-                        },
-                    },
-
-                }],
-                scale: 1,
-                quality: 100,
-                filename: 'preview_marked_image',
-                saveFormat: ImageFormat.png,
-            };
-            let markedWithText = await Marker.markText(optionsText);
-
-            dispatch(previewImageLoaded({ uri: markedWithText }));
+            // FORMATTING INFO
+            let info = `Datetime: ${new Date().toUTCString()}
+Latitude: ${coordData.latitude}
+Longitude: ${coordData.longitude}
+Altitude: ${location.altitude} meter
+GPS Mocked: ${location.isMocked ? 'Yes' : 'No'}`;
+            let data = {
+                imageUri: imageUri,
+                miniMapImageUri: miniMapImageUri,
+                icon: icon,
+                text: info
+            }
+            dispatch(previewImageLoaded({ uri: data }));
         } catch (err) {
             console.log(err);
             dispatch(previewImageError(err.message));
         }
     }
 }
+
+export const setOnSavePicture = (canvasRef, onSuccess, onError) => {
+    return async (_) => {
+        try {
+            const image = canvasRef.current?.makeImageSnapshot();
+            if (!image) throw new Error('Failed to create image snapshot');
+
+            // Encode to Base64
+            const base64 = image.encodeToBase64();
+            const filename = `${FileSystem.documentDirectory}skia-image-${Date.now()}.png`;
+
+            // Save Base64 string as PNG file
+            await FileSystem.writeAsStringAsync(filename, base64, {
+                encoding: FileSystem.EncodingType.Base64,
+            });
+
+            // Request permission & save to media
+            const { status } = await MediaLibrary.requestPermissionsAsync();
+            if (status !== 'granted') {
+                throw new Error('No permission granted to save image.')
+            }
+
+            await MediaLibrary.saveToLibraryAsync(filename);
+            onSuccess();
+        } catch (err) {
+            onError(err);
+        }
+    };
+};
